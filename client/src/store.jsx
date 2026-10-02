@@ -3,9 +3,7 @@ import {createContext,useContext,useState,useEffect} from 'react';
 export const PHONE='919302576964';
 export const EMOJI={Vegetables:'🥦',Fruits:'🍎',Dairy:'🥛',Grains:'🌾',Spices:'🌶️',Snacks:'🍪',Beverages:'🥤',Groceries:'🛒',Bakery:'🥐',Household:'🧹',PersonalCare:'🧴',Beauty:'✨','Baby Care':'🍼','Pet Care':'🐾',Electronics:'📱','Home & Kitchen':'🏠',Stationery:'📚',Toys:'🧸','Frozen Foods':'🧊'};
 const Ctx=createContext();export const useApp=()=>useContext(Ctx);
-const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  'http://localhost:5000/api';
+const API_BASE = 'https://freshkart-47e8.onrender.com/api';
 
 export const api = async (path, o = {}) => {
   const t = localStorage.getItem('fk_token');
