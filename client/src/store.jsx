@@ -3,10 +3,35 @@ import {createContext,useContext,useState,useEffect} from 'react';
 export const PHONE='919302576964';
 export const EMOJI={Vegetables:'🥦',Fruits:'🍎',Dairy:'🥛',Grains:'🌾',Spices:'🌶️',Snacks:'🍪',Beverages:'🥤',Groceries:'🛒',Bakery:'🥐',Household:'🧹',PersonalCare:'🧴',Beauty:'✨','Baby Care':'🍼','Pet Care':'🐾',Electronics:'📱','Home & Kitchen':'🏠',Stationery:'📚',Toys:'🧸','Frozen Foods':'🧊'};
 const Ctx=createContext();export const useApp=()=>useContext(Ctx);
-export const api=async(path,o={})=>{
-  const t=localStorage.getItem('fk_token');
-  const r=await fetch('/api'+path,{method:o.method||'GET',headers:{'Content-Type':'application/json',...(t&&{Authorization:'Bearer '+t})},body:o.body&&JSON.stringify(o.body)});
-  const d=await r.json();if(!r.ok)throw Error(d.error||'Something went wrong');return d;
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:5000/api';
+
+export const api = async (path, o = {}) => {
+  const t = localStorage.getItem('fk_token');
+
+  const r = await fetch(`${API_BASE}${path}`, {
+    method: o.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(t && {
+        Authorization: 'Bearer ' + t
+      })
+    },
+    body: o.body
+      ? JSON.stringify(o.body)
+      : undefined
+  });
+
+  const d = await r.json();
+
+  if (!r.ok) {
+    throw Error(
+      d.error || 'Something went wrong'
+    );
+  }
+
+  return d;
 };
 export function AppProvider({children}){
   const [user,setUser]=useState(null),[ready,setReady]=useState(!localStorage.getItem('fk_token')), [cfg,setCfg]=useState({categories:[],slots:[],pincodes:[],freeAbove:500,deliveryCharge:30,minOrder:150});
