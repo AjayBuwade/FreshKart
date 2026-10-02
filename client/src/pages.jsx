@@ -26,7 +26,24 @@ import {
   BookOpen,
   Gamepad2,
   Snowflake,
-  ShoppingBag
+  ShoppingBag,
+  User,
+Mail,
+Phone,
+Package,
+Heart,
+ShoppingCart,
+LogOut,
+Save,
+Pencil,
+ShieldCheck,
+  Settings,
+  HelpCircle,
+  Headphones,
+  SlidersHorizontal,
+  Bell,
+  MapPin,
+  ChevronRight
 } from 'lucide-react';
 
 import { api, useApp, PHONE, EMOJI } from './store.jsx';
@@ -254,20 +271,454 @@ export function Home(){
   </>;
 }
 
-export function Auth(){
-  const {login}=useApp(),nav=useNavigate(),[reg,setReg]=useState(false),[f,setF]=useState({}),[show,setShow]=useState(false),[err,setErr]=useState('');
-  const set=k=>e=>setF({...f,[k]:e.target.value});
-  const go=async e=>{e.preventDefault();setErr('');try{const d=await api(reg?'/auth/register':'/auth/login',{method:'POST',body:f});login(d);nav(d.user.role==='admin'?'/admin':'/')}catch(x){setErr(x.message)}};
-  return <div className="auth-wrap"><div className="auth-card"><div className="auth-brand"><span className="brand-mark">FK</span><span><strong>Fresh</strong>Kart</span></div><span className="eyebrow">WELCOME</span><h1>{reg?'Create your account':'Welcome back'}</h1><p>{reg?'Start shopping from your local supermarket.':'Sign in to continue your FreshKart shopping.'}</p>
-    <form onSubmit={go} className="d-grid gap-3 mt-4">
-      {reg&&<input className="form-control" placeholder="Full name" required onChange={set('name')}/>}
-      {reg?<><input className="form-control" placeholder="10-digit phone" required pattern="\d{10}" onChange={set('phone')}/><input className="form-control" type="email" placeholder="Email (optional)" onChange={set('email')}/></>
-        :<input className="form-control" placeholder="Phone or email" required onChange={set('id')}/>}
-      <div className="input-group"><input className="form-control" type={show?'text':'password'} placeholder="Password" required minLength={6} onChange={set('password')}/><button type="button" className="btn btn-outline-primary" onClick={()=>setShow(!show)}>{show?'Hide':'Show'}</button></div>
-      {err&&<div className="alert alert-danger py-2 mb-0">{err}</div>}
-      <button className="btn btn-primary btn-lg">{reg?'Create account':'Log in'} <span>→</span></button>
-    </form>
-    <button className="btn btn-link px-0 mt-3" onClick={()=>{setReg(!reg);setErr('')}}>{reg?'Already have an account? Log in':'New here? Create an account'}</button></div></div>;
+export function Auth() {
+  const { login } = useApp();
+  const nav = useNavigate();
+
+  const [reg, setReg] = useState(false);
+  const [forgot, setForgot] = useState(false);
+  const [resetStep, setResetStep] = useState(false);
+
+  const [f, setF] = useState({});
+  const [show, setShow] = useState(false);
+
+  const [remember, setRemember] = useState(true);
+
+  const [err, setErr] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const set = k => e =>
+    setF({
+      ...f,
+      [k]: e.target.value
+    });
+
+  const loginUser = async e => {
+    e.preventDefault();
+
+    setErr('');
+    setSuccess('');
+
+    try {
+      const d = await api('/auth/login', {
+        method: 'POST',
+        body: {
+          id: f.id,
+          password: f.password
+        }
+      });
+
+      login(d, remember);
+
+      nav(
+        d.user.role === 'admin'
+          ? '/admin'
+          : '/'
+      );
+
+    } catch (x) {
+      setErr(x.message);
+    }
+  };
+
+  const registerUser = async e => {
+    e.preventDefault();
+
+    setErr('');
+    setSuccess('');
+
+    try {
+      const d = await api('/auth/register', {
+        method: 'POST',
+        body: f
+      });
+
+      login(d, true);
+
+      nav(
+        d.user.role === 'admin'
+          ? '/admin'
+          : '/'
+      );
+
+    } catch (x) {
+      setErr(x.message);
+    }
+  };
+
+  const forgotPassword = async e => {
+    e.preventDefault();
+
+    setErr('');
+    setSuccess('');
+
+    try {
+      const d = await api(
+        '/auth/forgot-password',
+        {
+          method: 'POST',
+          body: {
+            id: f.id
+          }
+        }
+      );
+
+      setSuccess(
+        `${d.message} Demo reset code: ${d.demoCode}`
+      );
+
+      setResetStep(true);
+
+    } catch (x) {
+      setErr(x.message);
+    }
+  };
+
+  const resetPassword = async e => {
+    e.preventDefault();
+
+    setErr('');
+    setSuccess('');
+
+    try {
+      const d = await api(
+        '/auth/reset-password',
+        {
+          method: 'POST',
+          body: {
+            id: f.id,
+            code: f.code,
+            newPassword: f.newPassword
+          }
+        }
+      );
+
+      setSuccess(
+        'Password reset successfully. You can now log in.'
+      );
+
+      setForgot(false);
+      setResetStep(false);
+      setF({});
+      setShow(false);
+
+    } catch (x) {
+      setErr(x.message);
+    }
+  };
+
+  if (forgot) {
+    return (
+      <div className="auth-wrap">
+        <div className="auth-card">
+
+          <div className="auth-brand">
+            <span className="brand-mark">FK</span>
+            <span>
+              <strong>Fresh</strong>Kart
+            </span>
+          </div>
+
+          <span className="eyebrow">
+            ACCOUNT RECOVERY
+          </span>
+
+          <h1>
+            Reset your password
+          </h1>
+
+          <p>
+            {resetStep
+              ? 'Enter the reset code and choose a new password.'
+              : 'Enter your registered phone number or email.'}
+          </p>
+
+          <form
+            onSubmit={
+              resetStep
+                ? resetPassword
+                : forgotPassword
+            }
+            className="d-grid gap-3 mt-4"
+          >
+
+            <input
+              className="form-control"
+              placeholder="Phone or email"
+              required
+              value={f.id || ''}
+              disabled={resetStep}
+              onChange={set('id')}
+            />
+
+            {resetStep && (
+              <>
+                <input
+                  className="form-control"
+                  placeholder="6-digit reset code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  required
+                  value={f.code || ''}
+                  onChange={set('code')}
+                />
+
+                <div className="input-group">
+                  <input
+                    className="form-control"
+                    type={
+                      show
+                        ? 'text'
+                        : 'password'
+                    }
+                    placeholder="New password"
+                    minLength={6}
+                    required
+                    value={f.newPassword || ''}
+                    onChange={set('newPassword')}
+                  />
+
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() =>
+                      setShow(!show)
+                    }
+                  >
+                    {show
+                      ? 'Hide'
+                      : 'Show'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {err && (
+              <div className="alert alert-danger py-2 mb-0">
+                {err}
+              </div>
+            )}
+
+            {success && (
+              <div className="alert alert-success py-2 mb-0">
+                {success}
+              </div>
+            )}
+
+            <button className="btn btn-primary btn-lg">
+              {resetStep
+                ? 'Reset Password'
+                : 'Send Reset Code'}
+
+              <span>→</span>
+            </button>
+
+          </form>
+
+          <button
+            className="btn btn-link px-0 mt-3"
+            onClick={() => {
+              setForgot(false);
+              setResetStep(false);
+              setErr('');
+              setSuccess('');
+              setF({});
+            }}
+          >
+            ← Back to Login
+          </button>
+
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="auth-wrap">
+
+      <div className="auth-card">
+
+        <div className="auth-brand">
+          <span className="brand-mark">
+            FK
+          </span>
+
+          <span>
+            <strong>Fresh</strong>Kart
+          </span>
+        </div>
+
+        <span className="eyebrow">
+          WELCOME
+        </span>
+
+        <h1>
+          {reg
+            ? 'Create your account'
+            : 'Welcome back'}
+        </h1>
+
+        <p>
+          {reg
+            ? 'Start shopping from your local supermarket.'
+            : 'Sign in to continue your FreshKart shopping.'}
+        </p>
+
+        <form
+          onSubmit={
+            reg
+              ? registerUser
+              : loginUser
+          }
+          className="d-grid gap-3 mt-4"
+        >
+
+          {reg && (
+            <input
+              className="form-control"
+              placeholder="Full name"
+              required
+              value={f.name || ''}
+              onChange={set('name')}
+            />
+          )}
+
+          {reg ? (
+            <>
+              <input
+                className="form-control"
+                placeholder="10-digit phone"
+                required
+                pattern="\\d{10}"
+                value={f.phone || ''}
+                onChange={set('phone')}
+              />
+
+              <input
+                className="form-control"
+                type="email"
+                placeholder="Email (optional)"
+                value={f.email || ''}
+                onChange={set('email')}
+              />
+            </>
+          ) : (
+            <input
+              className="form-control"
+              placeholder="Phone or email"
+              required
+              value={f.id || ''}
+              onChange={set('id')}
+            />
+          )}
+
+          <div className="input-group">
+
+            <input
+              className="form-control"
+              type={
+                show
+                  ? 'text'
+                  : 'password'
+              }
+              placeholder="Password"
+              required
+              minLength={6}
+              value={f.password || ''}
+              onChange={set('password')}
+            />
+
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={() =>
+                setShow(!show)
+              }
+            >
+              {show
+                ? 'Hide'
+                : 'Show'}
+            </button>
+
+          </div>
+
+          {!reg && (
+            <div className="d-flex justify-content-between align-items-center">
+
+              <label
+                className="d-flex align-items-center gap-2 small"
+                style={{
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  className="form-check-input m-0"
+                  checked={remember}
+                  onChange={e =>
+                    setRemember(
+                      e.target.checked
+                    )
+                  }
+                />
+
+                Remember me
+              </label>
+
+              <button
+                type="button"
+                className="btn btn-link p-0 small"
+                onClick={() => {
+                  setForgot(true);
+                  setErr('');
+                  setSuccess('');
+                }}
+              >
+                Forgot password?
+              </button>
+
+            </div>
+          )}
+
+          {err && (
+            <div className="alert alert-danger py-2 mb-0">
+              {err}
+            </div>
+          )}
+
+          {success && (
+            <div className="alert alert-success py-2 mb-0">
+              {success}
+            </div>
+          )}
+
+          <button className="btn btn-primary btn-lg">
+            {reg
+              ? 'Create account'
+              : 'Log in'}
+
+            <span>→</span>
+          </button>
+
+        </form>
+
+        <button
+          className="btn btn-link px-0 mt-3"
+          onClick={() => {
+            setReg(!reg);
+            setErr('');
+            setSuccess('');
+            setF({});
+          }}
+        >
+          {reg
+            ? 'Already have an account? Log in'
+            : 'New here? Create an account'}
+        </button>
+
+      </div>
+    </div>
+  );
 }
 
 export function Cart(){
@@ -298,11 +749,976 @@ export function MyOrders(){
   return <div className="container page-pad" style={{maxWidth:820}}><div className="section-heading"><div><span className="section-kicker">ACCOUNT</span><h2>My orders</h2></div></div>{err&&<div className="alert alert-danger">{err}</div>}{!list.length&&<div className="empty-state"><div>📦</div><h3>No orders yet</h3><p>Your placed orders will appear here.</p></div>}{list.map(o=><div key={o._id} className="order-card"><div className="d-flex justify-content-between gap-3"><b>#{o._id.slice(-6).toUpperCase()}</b><span className={'status-pill '+(o.status==='Cancelled'?'muted':'')}>{o.status}</span></div><small className="text-muted">{new Date(o.createdAt).toLocaleString('en-IN')} · Slot {o.slot}</small><ul className="mb-2 mt-2">{o.items.map((i,k)=><li key={k}>{i.name} × {i.qty} {i.unit}</li>)}</ul><div className="d-flex justify-content-between align-items-center"><b>₹{o.total} · Cash on Delivery</b>{['Placed','Confirmed'].includes(o.status)&&<button className="btn btn-sm btn-outline-danger" onClick={()=>cancel(o._id)}>Cancel order</button>}</div></div>)}</div>;
 }
 
-const PAGES={
-  about:['About FreshKart','FreshKart brings fresh food, everyday groceries, household essentials and more from trusted suppliers to your door in Pandhurna. Order online and pay cash when we deliver.'],
-  contact:[`Contact us`,`Call or WhatsApp us at +${PHONE}. Orders are delivered in the slots shown at checkout. [Near State Bank, Pandhurna.]`],
-  faq:['FAQ','Which areas do you deliver to? Only the pincodes accepted at checkout. How do I pay? Cash on delivery. Can I cancel? Yes, until the order is out for delivery.'],
-  refund:['Refund and replacement','If an item is spoiled or wrong, tell us at the time of delivery or within 2 hours and we will replace it or adjust the bill. '],
-  privacy:['Privacy policy','We collect your name, phone, email and address only to deliver your orders. We do not sell your data. '],
-  terms:['Terms of service','Prices and stock change daily. Orders are confirmed once accepted by FreshKart. We may cancel orders we cannot fulfil. ']};
-export function Page(){const {slug}=useParams(),[t,b]=PAGES[slug]||['Not found','This page does not exist.'];return <div className="container page-pad" style={{maxWidth:760}}><div className="content-card"><span className="section-kicker">FRESHKART</span><h2>{t}</h2><p>{b}</p></div></div>}
+export function Profile(){
+  const {
+    user,
+    updateProfile,
+    logout,
+    cart,
+    wishlist
+  } = useApp();
+
+  const nav = useNavigate();
+
+  const [editing,setEditing]=useState(false);
+
+  const [name,setName]=useState(
+    user?.name || ''
+  );
+
+  const [email,setEmail]=useState(
+    user?.email || ''
+  );
+
+  const [saving,setSaving]=useState(false);
+
+  const [err,setErr]=useState('');
+
+  const [success,setSuccess]=useState('');
+
+  const save=async(e)=>{
+    e.preventDefault();
+
+    setErr('');
+    setSuccess('');
+    setSaving(true);
+
+    try{
+      await updateProfile({
+        name,
+        email
+      });
+
+      setEditing(false);
+      setSuccess(
+        'Profile updated successfully.'
+      );
+    }catch(x){
+      setErr(x.message);
+    }finally{
+      setSaving(false);
+    }
+  };
+
+  const handleLogout=()=>{
+    logout();
+    nav('/');
+  };
+
+  return (
+    <div className="profile-page">
+      <div className="container page-pad">
+
+        <div className="profile-header">
+
+          <div>
+            <span className="section-kicker">
+              MY ACCOUNT
+            </span>
+
+            <h1>
+              Profile
+            </h1>
+
+            <p>
+              Manage your FreshKart account and
+              shopping activity.
+            </p>
+          </div>
+
+          <div className="profile-header-avatar">
+            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+          </div>
+
+        </div>
+
+        <div className="profile-layout">
+
+          {/* PROFILE CARD */}
+          <section className="profile-main-card">
+
+            <div className="profile-card-top">
+
+              <div className="profile-large-avatar">
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+
+              <div className="profile-identity">
+                <h2>
+                  {user?.name || 'FreshKart User'}
+                </h2>
+
+                <span>
+                  <ShieldCheck size={15} />
+                  {user?.role === 'admin'
+                    ? 'Administrator'
+                    : 'FreshKart Customer'}
+                </span>
+              </div>
+
+              {!editing && (
+                <button
+                  type="button"
+                  className="profile-edit-btn"
+                  onClick={()=>{
+                    setEditing(true);
+                    setSuccess('');
+                  }}
+                >
+                  <Pencil size={17} />
+                  Edit profile
+                </button>
+              )}
+
+            </div>
+
+            {success && (
+              <div className="profile-success">
+                {success}
+              </div>
+            )}
+
+            {err && (
+              <div className="profile-error">
+                {err}
+              </div>
+            )}
+
+            {!editing ? (
+
+              <div className="profile-details">
+
+                <div className="profile-detail">
+
+                  <span className="profile-detail-icon">
+                    <User size={19} />
+                  </span>
+
+                  <div>
+                    <small>Full name</small>
+                    <strong>
+                      {user?.name || 'Not available'}
+                    </strong>
+                  </div>
+
+                </div>
+
+                <div className="profile-detail">
+
+                  <span className="profile-detail-icon">
+                    <Phone size={19} />
+                  </span>
+
+                  <div>
+                    <small>Phone number</small>
+                    <strong>
+                      {user?.phone || 'Not available'}
+                    </strong>
+                  </div>
+
+                </div>
+
+                <div className="profile-detail">
+
+                  <span className="profile-detail-icon">
+                    <Mail size={19} />
+                  </span>
+
+                  <div>
+                    <small>Email address</small>
+                    <strong>
+                      {user?.email || 'Not added'}
+                    </strong>
+                  </div>
+
+                </div>
+
+              </div>
+
+            ) : (
+
+              <form
+                className="profile-edit-form"
+                onSubmit={save}
+              >
+
+                <div>
+                  <label>
+                    Full name
+                  </label>
+
+                  <input
+                    className="form-control"
+                    value={name}
+                    onChange={(e)=>setName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label>
+                    Phone number
+                  </label>
+
+                  <input
+                    className="form-control"
+                    value={user?.phone || ''}
+                    disabled
+                  />
+
+                  <small>
+                    Phone number cannot be changed here.
+                  </small>
+                </div>
+
+                <div>
+                  <label>
+                    Email address
+                  </label>
+
+                  <input
+                    className="form-control"
+                    type="email"
+                    value={email}
+                    onChange={(e)=>setEmail(e.target.value)}
+                  />
+                </div>
+
+                <div className="profile-edit-actions">
+
+                  <button
+                    type="button"
+                    className="btn btn-light"
+                    onClick={()=>{
+                      setEditing(false);
+                      setName(user?.name || '');
+                      setEmail(user?.email || '');
+                      setErr('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    className="btn btn-cta"
+                    disabled={saving}
+                  >
+                    <Save size={17} />
+
+                    {saving
+                      ? 'Saving...'
+                      : 'Save changes'}
+                  </button>
+
+                </div>
+
+              </form>
+            )}
+
+          </section>
+
+
+          {/* ACCOUNT SHORTCUTS */}
+          <aside className="profile-side">
+
+            <button
+              type="button"
+              className="profile-action-card"
+              onClick={()=>nav('/orders')}
+            >
+              <span>
+                <Package size={21} />
+              </span>
+
+              <div>
+                <strong>
+                  My Orders
+                </strong>
+
+                <small>
+                  View your order history
+                </small>
+              </div>
+
+              <ChevronRightIcon />
+            </button>
+
+
+            <button
+              type="button"
+              className="profile-action-card"
+              onClick={()=>nav('/')}
+            >
+              <span>
+                <ShoppingCart size={21} />
+              </span>
+
+              <div>
+                <strong>
+                  Continue Shopping
+                </strong>
+
+                <small>
+                  Explore FreshKart products
+                </small>
+              </div>
+
+              <ChevronRightIcon />
+            </button>
+
+
+            <div className="profile-stats">
+
+              <div>
+                <Heart size={20} />
+
+                <strong>
+                  {wishlist.length}
+                </strong>
+
+                <small>
+                  Wishlist
+                </small>
+              </div>
+
+              <div>
+                <ShoppingCart size={20} />
+
+                <strong>
+                  {cart.reduce(
+                    (sum,item)=>
+                      sum+(item.qty||0),
+                    0
+                  )}
+                </strong>
+
+                <small>
+                  Cart items
+                </small>
+              </div>
+
+            </div>
+
+
+            <button
+              type="button"
+              className="profile-logout"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+
+          </aside>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChevronRightIcon(){
+  return (
+    <span className="profile-arrow">
+      →
+    </span>
+  );
+}
+
+const PAGES = {
+  about: [
+    'About FreshKart',
+    'FreshKart brings fresh food, everyday groceries, household essentials and more from trusted suppliers to your door in Pandhurna. Order online and pay cash when we deliver.'
+  ],
+
+  contact: [
+    'Contact us',
+    `Call or WhatsApp us at +${PHONE}. Orders are delivered in the slots shown at checkout. [Near State Bank, Pandhurna.]`
+  ],
+
+  faq: [
+    'FAQ',
+    'Which areas do you deliver to? Only the pincodes accepted at checkout. How do I pay? Cash on delivery. Can I cancel? Yes, until the order is out for delivery.'
+  ],
+
+  refund: [
+    'Refund and replacement',
+    'If an item is spoiled or wrong, tell us at the time of delivery or within 2 hours and we will replace it or adjust the bill.'
+  ],
+
+  privacy: [
+    'Privacy policy',
+    'We collect your name, phone, email and address only to deliver your orders. We do not sell your data.'
+  ],
+
+  terms: [
+    'Terms of service',
+    'Prices and stock change daily. Orders are confirmed once accepted by FreshKart. We may cancel orders we cannot fulfil.'
+  ]
+};
+
+
+/* =========================================================
+   SERVICES PAGE
+========================================================= */
+
+function ServicesPage() {
+  const services = [
+    {
+      icon: ShoppingBasket,
+      title: 'Fresh Groceries',
+      text: 'Daily groceries and essential food items selected for your everyday needs.'
+    },
+    {
+      icon: Package,
+      title: 'Home Delivery',
+      text: 'Get your FreshKart order delivered to your doorstep in available delivery slots.'
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Quality Checked',
+      text: 'We focus on reliable products and quality essentials for your household.'
+    },
+    {
+      icon: ShoppingCart,
+      title: 'Easy Ordering',
+      text: 'Browse products, add them to your cart and place your order in a few simple steps.'
+    },
+    {
+      icon: Heart,
+      title: 'Wishlist',
+      text: 'Save products you like and easily find them again when you need them.'
+    },
+    {
+      icon: Phone,
+      title: 'Customer Support',
+      text: `Need help? Contact FreshKart through phone or WhatsApp at +${PHONE}.`
+    }
+  ];
+
+  return (
+    <div className="container page-pad">
+      <div className="content-card fk-info-page">
+
+        <span className="section-kicker">
+          FRESHKART SERVICES
+        </span>
+
+        <h1>
+          Services designed for everyday shopping
+        </h1>
+
+        <p className="fk-info-intro">
+          FreshKart makes everyday shopping simple,
+          convenient and accessible from one place.
+        </p>
+
+        <div className="fk-service-grid">
+          {services.map((service) => {
+            const Icon = service.icon;
+
+            return (
+              <article
+                className="fk-service-card"
+                key={service.title}
+              >
+                <div className="fk-info-icon">
+                  <Icon size={24} />
+                </div>
+
+                <h3>
+                  {service.title}
+                </h3>
+
+                <p>
+                  {service.text}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+/* =========================================================
+   CATEGORIES PAGE
+========================================================= */
+
+function CategoriesPage() {
+  const { cfg } = useApp();
+  const navigate = useNavigate();
+
+  return (
+    <div className="container page-pad">
+
+      <div className="content-card fk-info-page">
+
+        <span className="section-kicker">
+          SHOPPING
+        </span>
+
+        <h1>
+          Browse Categories
+        </h1>
+
+        <p className="fk-info-intro">
+          Explore FreshKart products by category and
+          find everything you need in one place.
+        </p>
+
+        <div className="fk-brd-category-grid">
+
+          {cfg.categories.map((category) => {
+            const Icon =
+              CATEGORY_ICONS[category] ||
+              ShoppingBag;
+
+            return (
+              <button
+                type="button"
+                key={category}
+                className="fk-brd-category-card"
+                onClick={() =>
+                  navigate(
+                    `/?cat=${encodeURIComponent(category)}`
+                  )
+                }
+              >
+                <span className="fk-brd-category-icon">
+                  <Icon
+                    size={25}
+                    strokeWidth={1.8}
+                  />
+                </span>
+
+                <span>
+                  <strong>
+                    {category}
+                  </strong>
+
+                  <small>
+                    Explore products
+                  </small>
+                </span>
+
+                <ChevronRight size={18} />
+              </button>
+            );
+          })}
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+/* =========================================================
+   SETTINGS PAGE
+========================================================= */
+
+function SettingsPage() {
+  const [notifications, setNotifications] =
+    useState(
+      localStorage.getItem(
+        'freshkart_notifications'
+      ) !== 'false'
+    );
+
+  const [whatsapp, setWhatsapp] =
+    useState(
+      localStorage.getItem(
+        'freshkart_whatsapp_updates'
+      ) !== 'false'
+    );
+
+  const updateNotifications = (value) => {
+    setNotifications(value);
+
+    localStorage.setItem(
+      'freshkart_notifications',
+      String(value)
+    );
+  };
+
+  const updateWhatsapp = (value) => {
+    setWhatsapp(value);
+
+    localStorage.setItem(
+      'freshkart_whatsapp_updates',
+      String(value)
+    );
+  };
+
+  return (
+    <div className="container page-pad">
+
+      <div className="content-card fk-info-page">
+
+        <span className="section-kicker">
+          ACCOUNT SETTINGS
+        </span>
+
+        <h1>
+          Settings
+        </h1>
+
+        <p className="fk-info-intro">
+          Manage your FreshKart preferences.
+        </p>
+
+
+        {/* NOTIFICATIONS */}
+
+        <div className="fk-settings-section">
+
+          <div className="fk-settings-heading">
+
+            <div className="fk-info-icon">
+              <Bell size={21} />
+            </div>
+
+            <div>
+              <h3>
+                Notifications
+              </h3>
+
+              <p>
+                Choose how FreshKart keeps you updated.
+              </p>
+            </div>
+
+          </div>
+
+
+          <label className="fk-setting-row">
+
+            <div>
+              <strong>
+                Order notifications
+              </strong>
+
+              <small>
+                Receive updates about your orders.
+              </small>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={notifications}
+              onChange={(e) =>
+                updateNotifications(
+                  e.target.checked
+                )
+              }
+            />
+
+          </label>
+
+
+          <label className="fk-setting-row">
+
+            <div>
+              <strong>
+                WhatsApp updates
+              </strong>
+
+              <small>
+                Receive useful order updates through WhatsApp.
+              </small>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={whatsapp}
+              onChange={(e) =>
+                updateWhatsapp(
+                  e.target.checked
+                )
+              }
+            />
+
+          </label>
+
+        </div>
+
+
+        {/* DELIVERY */}
+
+        <div className="fk-settings-section">
+
+          <div className="fk-settings-heading">
+
+            <div className="fk-info-icon">
+              <MapPin size={21} />
+            </div>
+
+            <div>
+              <h3>
+                Delivery
+              </h3>
+
+              <p>
+                FreshKart delivery information.
+              </p>
+            </div>
+
+          </div>
+
+          <div className="fk-setting-info-box">
+
+            <strong>
+              Delivery location
+            </strong>
+
+            <span>
+              Pandhurna and supported pincodes
+            </span>
+
+          </div>
+
+          <div className="fk-setting-info-box">
+
+            <strong>
+              Payment method
+            </strong>
+
+            <span>
+              Cash on Delivery
+            </span>
+
+          </div>
+
+        </div>
+
+
+        {/* PRIVACY */}
+
+        <div className="fk-settings-section">
+
+          <div className="fk-settings-heading">
+
+            <div className="fk-info-icon">
+              <ShieldCheck size={21} />
+            </div>
+
+            <div>
+              <h3>
+                Privacy & Security
+              </h3>
+
+              <p>
+                Your account information is handled securely.
+              </p>
+            </div>
+
+          </div>
+
+          <p className="fk-settings-note">
+            FreshKart uses your account information
+            to provide shopping, delivery and
+            customer support services.
+          </p>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+/* =========================================================
+   HELP & SUPPORT PAGE
+========================================================= */
+
+function HelpPage() {
+  const navigate = useNavigate();
+
+  const questions = [
+    {
+      question: 'Where does FreshKart deliver?',
+      answer:
+        'FreshKart delivers to the supported pincodes available during checkout.'
+    },
+    {
+      question: 'How can I pay?',
+      answer:
+        'FreshKart currently supports Cash on Delivery.'
+    },
+    {
+      question: 'Can I cancel my order?',
+      answer:
+        'Orders can be cancelled while they are in the Placed or Confirmed stage. Once an order is out for delivery, cancellation may no longer be available.'
+    },
+    {
+      question: 'What if I receive a wrong or spoiled item?',
+      answer:
+        'Contact FreshKart at the time of delivery or within 2 hours so the item can be reviewed for replacement or bill adjustment.'
+    }
+  ];
+
+  return (
+    <div className="container page-pad">
+
+      <div className="content-card fk-info-page">
+
+        <span className="section-kicker">
+          CUSTOMER SUPPORT
+        </span>
+
+        <h1>
+          Help & Support
+        </h1>
+
+        <p className="fk-info-intro">
+          Find quick answers or contact FreshKart
+          for help with your order.
+        </p>
+
+
+        {/* SUPPORT CARDS */}
+
+        <div className="fk-help-actions">
+
+          <button
+            type="button"
+            className="fk-help-card"
+            onClick={() =>
+              navigate('/p/contact')
+            }
+          >
+            <span className="fk-info-icon">
+              <Phone size={22} />
+            </span>
+
+            <div>
+              <strong>
+                Contact FreshKart
+              </strong>
+
+              <small>
+                Call or WhatsApp for assistance
+              </small>
+            </div>
+
+            <ChevronRight size={18} />
+          </button>
+
+
+          <button
+            type="button"
+            className="fk-help-card"
+            onClick={() =>
+              navigate('/p/faq')
+            }
+          >
+            <span className="fk-info-icon">
+              <HelpCircle size={22} />
+            </span>
+
+            <div>
+              <strong>
+                Frequently Asked Questions
+              </strong>
+
+              <small>
+                Find answers to common questions
+              </small>
+            </div>
+
+            <ChevronRight size={18} />
+          </button>
+
+        </div>
+
+
+        {/* FAQ */}
+
+        <div className="fk-faq-list">
+
+          {questions.map((item) => (
+            <details
+              className="fk-faq-item"
+              key={item.question}
+            >
+              <summary>
+                <span>
+                  {item.question}
+                </span>
+
+                <ChevronRight size={18} />
+              </summary>
+
+              <p>
+                {item.answer}
+              </p>
+            </details>
+          ))}
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+/* =========================================================
+   GENERIC PAGE ROUTER
+========================================================= */
+
+export function Page() {
+  const { slug } = useParams();
+
+  if (slug === 'services') {
+    return <ServicesPage />;
+  }
+
+  if (slug === 'categories') {
+    return <CategoriesPage />;
+  }
+
+  if (slug === 'settings') {
+    return <SettingsPage />;
+  }
+
+  if (slug === 'help') {
+    return <HelpPage />;
+  }
+
+  const [t, b] =
+    PAGES[slug] ||
+    [
+      'Not found',
+      'This page does not exist.'
+    ];
+
+  return (
+    <div
+      className="container page-pad"
+      style={{ maxWidth: 760 }}
+    >
+      <div className="content-card">
+
+        <span className="section-kicker">
+          FRESHKART
+        </span>
+
+        <h2>
+          {t}
+        </h2>
+
+        <p>
+          {b}
+        </p>
+
+      </div>
+    </div>
+  );
+}

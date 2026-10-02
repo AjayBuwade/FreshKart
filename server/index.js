@@ -14,7 +14,9 @@ const auth=(req,res,next)=>{try{req.user=jwt.verify((req.headers.authorization||
 const admin=(req,res,next)=>req.user.role==='admin'?next():res.status(403).json({error:'Admins only'});
 const wrap=f=>(req,res,next)=>f(req,res,next).catch(e=>res.status(400).json({error:e.message}));
 // Plug MSG91 / WhatsApp Cloud API in here later
+
 const notify=(phone,msg)=>console.log(`[notify ${phone}] ${msg}`);
+const resetCodes = new Map();
 const restock=o=>Promise.all(o.items.map(i=>Product.updateOne({_id:i.product},{$inc:{stock:i.qty}})));
 
 const app=express();app.use(cors(),express.json());
@@ -34,6 +36,197 @@ app.post('/api/auth/login',wrap(async(req,res)=>{
   if(!u||!(await bcrypt.compare(password||'',u.password))) throw Error('Wrong phone/email or password');
   res.json({token:sign(u),user:pub(u)});
 }));
+app.post('/api/auth/forgot-password',wrap(async(req,res)=>{
+  const {id}=req.body;
+
+  if(!id?.trim()){
+    throw Error('Phone number or email is required');
+  }
+
+  const value=id.trim();
+
+  const u=await User.findOne({
+    $or:[
+      {phone:value},
+      {email:value}
+    ]
+  });
+
+  if(!u){
+    throw Error('No account found with this phone/email');
+  }
+
+  const code=
+    Math.floor(
+      100000 +
+      Math.random()*900000
+    ).toString();
+
+  resetCodes.set(value,{
+    code,
+    expiresAt:
+      Date.now() + 10*60*1000
+  });
+
+  console.log(
+    `FreshKart password reset code for ${value}: ${code}`
+  );
+
+  res.json({
+    message:'Reset code generated successfully.',
+    demoCode:code
+  });
+}));
+app.post('/api/auth/reset-password',wrap(async(req,res)=>{
+  const {
+    id,
+    code,
+    newPassword
+  }=req.body;
+
+  if(
+    !id?.trim() ||
+    !code?.trim() ||
+    !newPassword
+  ){
+    throw Error(
+      'Phone/email, reset code and new password are required'
+    );
+  }
+
+  if(newPassword.length < 6){
+    throw Error(
+      'New password must be at least 6 characters'
+    );
+  }
+
+  const value=id.trim();
+
+  const saved=resetCodes.get(value);
+
+  if(!saved){
+    throw Error(
+      'Reset code not found. Please request a new code.'
+    );
+  }
+
+  if(Date.now() > saved.expiresAt){
+    resetCodes.delete(value);
+
+    throw Error(
+      'Reset code has expired. Please request a new one.'
+    );
+  }
+
+  if(saved.code !== code.trim()){
+    throw Error(
+      'Invalid reset code'
+    );
+  }
+
+  const u=await User.findOne({
+    $or:[
+      {phone:value},
+      {email:value}
+    ]
+  });
+
+  if(!u){
+    throw Error('User not found');
+  }
+
+  u.password=
+    await bcrypt.hash(
+      newPassword,
+      10
+    );
+
+  await u.save();
+
+  resetCodes.delete(value);
+
+  res.json({
+    ok:true,
+    message:
+      'Password reset successfully'
+  });
+}));
+
+app.post('/api/auth/reset-password',wrap(async(req,res)=>{
+  const {
+    id,
+    code,
+    newPassword
+  }=req.body;
+
+  if(
+    !id?.trim() ||
+    !code?.trim() ||
+    !newPassword
+  ){
+    throw Error(
+      'Phone/email, reset code and new password are required'
+    );
+  }
+
+  if(newPassword.length < 6){
+    throw Error(
+      'New password must be at least 6 characters'
+    );
+  }
+
+  const value=id.trim();
+
+  const saved=resetCodes.get(value);
+
+  if(!saved){
+    throw Error(
+      'Reset code not found. Please request a new code.'
+    );
+  }
+
+  if(Date.now() > saved.expiresAt){
+    resetCodes.delete(value);
+
+    throw Error(
+      'Reset code has expired. Please request a new one.'
+    );
+  }
+
+  if(saved.code !== code.trim()){
+    throw Error(
+      'Invalid reset code'
+    );
+  }
+
+  const u=await User.findOne({
+    $or:[
+      {phone:value},
+      {email:value}
+    ]
+  });
+
+  if(!u){
+    throw Error('User not found');
+  }
+
+  u.password=
+    await bcrypt.hash(
+      newPassword,
+      10
+    );
+
+  await u.save();
+
+  resetCodes.delete(value);
+
+  res.json({
+    ok:true,
+    message:
+      'Password reset successfully'
+  });
+}));
+
 app.get('/api/auth/me',auth,wrap(async(req,res)=>res.json(pub(await User.findById(req.user.id)))));
 
 // ---- Catalog
@@ -44,6 +237,35 @@ app.get('/api/products',wrap(async(req,res)=>{
   res.json(await Product.find(f).sort(sort==='low'?{price:1}:sort==='high'?{price:-1}:{name:1}));
 }));
 app.get('/api/admin/products',auth,admin,wrap(async(q,r)=>r.json(await Product.find().sort({name:1}))));
+app.put('/api/auth/me',auth,wrap(async(req,res)=>{
+  const {name,email}=req.body;
+
+  if(!name?.trim()){
+    throw Error('Name is required');
+  }
+
+  const u=await User.findByIdAndUpdate(
+    req.user.id,
+    {
+      $set:{
+        name:name.trim(),
+        email:(email||'').trim()
+      }
+    },
+    {
+      new:true,
+      runValidators:true
+    }
+  );
+
+  if(!u){
+    throw Error('User not found');
+  }
+
+  res.json({
+    user:pub(u)
+  });
+}));
 app.post('/api/admin/products',auth,admin,wrap(async(q,r)=>r.json(await Product.create(q.body))));
 app.put('/api/admin/products/:id',auth,admin,wrap(async(q,r)=>r.json(await Product.findByIdAndUpdate(q.params.id,q.body,{new:true,runValidators:true}))));
 app.delete('/api/admin/products/:id',auth,admin,wrap(async(q,r)=>{await Product.findByIdAndDelete(q.params.id);r.json({ok:true})}));
