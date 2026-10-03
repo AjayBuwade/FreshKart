@@ -1,4 +1,11 @@
-import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import {
+  Routes,
+  Route,
+  Link,
+  Navigate
+} from 'react-router-dom';
+
+import { useEffect } from 'react';
 
 import { useApp } from './store.jsx';
 
@@ -39,7 +46,20 @@ const Guard = ({ role, children }) => {
 };
 
 export default function App() {
+
   const { cart, total, user } = useApp();
+
+  useEffect(() => {
+    document.documentElement.classList.add(
+      'fk-app-ready'
+    );
+
+    return () => {
+      document.documentElement.classList.remove(
+        'fk-app-ready'
+      );
+    };
+  }, []);
 
   const n = cart.reduce(
     (sum, item) => sum + (item.qty || 0),
