@@ -412,14 +412,14 @@ const seedProducts = [
     stock: 22,
     image: 'https://images.pexels.com/photos/4725735/pexels-photo-4725735.jpeg?auto=compress&cs=tinysrgb&w=900'
   },
-  {
-    name: 'Turmeric Powder',
-    category: 'Spices',
-    price: 95,
-    unit: 'pack',
-    stock: 30,
-    image: 'https://images.pexels.com/photos/8760466/pexels-photo-8760466.jpeg?auto=compress&cs=tinysrgb&w=900'
-  },
+{
+  name: 'Turmeric Powder',
+  category: 'Spices',
+  price: 95,
+  unit: 'pack',
+  stock: 30,
+  image: 'https://images.pexels.com/photos/4198019/pexels-photo-4198019.jpeg?auto=compress&cs=tinysrgb&w=900'
+},
   {
     name: 'Basmati Rice',
     category: 'Groceries',

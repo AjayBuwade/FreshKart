@@ -585,14 +585,17 @@ export function Auth() {
 
           {reg ? (
             <>
-              <input
-                className="form-control"
-                placeholder="10-digit phone"
-                required
-                pattern="\\d{10}"
-                value={f.phone || ''}
-                onChange={set('phone')}
-              />
+<input
+  className="form-control"
+  type="tel"
+  placeholder="10-digit phone"
+  required
+  pattern="[0-9]{10}"
+  inputMode="numeric"
+  maxLength={10}
+  value={f.phone || ''}
+  onChange={set('phone')}
+/>
 
               <input
                 className="form-control"
