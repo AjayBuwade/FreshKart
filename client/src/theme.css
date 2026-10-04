@@ -4306,19 +4306,3 @@ body.fk-has-sidebar {
   }
 }
 
-/* =========================================================
-   INITIAL PAGE FLASH FIX
-   Prevents the unstyled / incomplete layout from appearing
-   before React has mounted the final FreshKart UI.
-   ========================================================= */
-
-html:not(.fk-app-ready) #root {
-  opacity: 0;
-  visibility: hidden;
-}
-
-html.fk-app-ready #root {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.12s ease;
-}

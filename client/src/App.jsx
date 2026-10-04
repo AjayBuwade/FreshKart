@@ -5,8 +5,6 @@ import {
   Navigate
 } from 'react-router-dom';
 
-import { useEffect } from 'react';
-
 import { useApp } from './store.jsx';
 
 import {
@@ -49,17 +47,6 @@ export default function App() {
 
   const { cart, total, user } = useApp();
 
-  useEffect(() => {
-    document.documentElement.classList.add(
-      'fk-app-ready'
-    );
-
-    return () => {
-      document.documentElement.classList.remove(
-        'fk-app-ready'
-      );
-    };
-  }, []);
 
   const n = cart.reduce(
     (sum, item) => sum + (item.qty || 0),
