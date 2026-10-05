@@ -5025,3 +5025,50 @@ body.fk-has-sidebar {
     grid-template-columns: 1fr 1fr !important;
   }
 }
+
+/* =========================================================
+   FINAL FIX - PROFILE WITH CUSTOMER SIDEBAR
+========================================================= */
+
+@media (min-width: 992px) {
+
+  body.fk-has-sidebar .profile-page {
+    margin-left: var(--fk-sidebar-width) !important;
+    width: calc(100% - var(--fk-sidebar-width)) !important;
+    max-width: none !important;
+    transition: margin-left 0.28s ease, width 0.28s ease;
+  }
+
+  body.fk-sidebar-collapsed .profile-page {
+    margin-left: var(--fk-sidebar-collapsed-width) !important;
+    width: calc(100% - var(--fk-sidebar-collapsed-width)) !important;
+    max-width: none !important;
+  }
+
+  body.fk-has-sidebar .profile-page > .container,
+  body.fk-sidebar-collapsed .profile-page > .container {
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+
+  .profile-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .profile-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    overflow-x: hidden !important;
+  }
+}
